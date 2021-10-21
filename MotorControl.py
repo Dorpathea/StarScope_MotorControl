@@ -4,6 +4,18 @@
 import time
 import RPi.GPIO as GPIO
 
+ready = 0
+motor1 = 0
+motor2 = 0
+
+# Wait to recieve signal
+while ready != 1:
+
+    # Recieve signal
+    # if signal recieved, ready = 1
+    # motor1 = value1
+    # motor2 = value2
+
 GPIO.setmode(GPIO.BOARD)
 
 # GPIO pins setup with RPi
@@ -15,52 +27,54 @@ GPIO.setup(15, GPIO.OUT)    # BIN1
 GPIO.setup(16, GPIO.OUT)    # BIN2
 GPIO.setup(18, GPIO.OUT)    # PWMB
 
-#For clockwise control
+if motor1 < number:
 
-# Motor A
-GPIO.output(12, GPIO.HIGH)  # Set AIN1
-GPIO.output(11, GPIO.LOW)   # Set AIN2
+    #For clockwise control
 
-# Motor B
-GPIO.output(15, GPIO.HIGH)  # Set BIN1
-GPIO.output(16, GPIO.LOW)   # Set BIN2
+    # Motor A
+    GPIO.output(12, GPIO.HIGH)  # Set AIN1
+    GPIO.output(11, GPIO.LOW)   # Set AIN2
 
-# Set motor speed with PWMA and PWMB
-GPIO.output(7, GPIO.HIGH)   # Motor A
-GPIO.output(18, GPIO.HIGH)  # Motor B
+    # Motor B
+    GPIO.output(15, GPIO.HIGH)  # Set BIN1
+    GPIO.output(16, GPIO.LOW)   # Set BIN2
 
-#Disable standby with STBY
-GPIO.output(13, GPIO.HIGH)
+    # Set motor speed with PWMA and PWMB
+    GPIO.output(7, GPIO.HIGH)   # Motor A
+    GPIO.output(18, GPIO.HIGH)  # Motor B
 
-# Wait
-time.sleep(3)
+    #Disable standby with STBY
+    GPIO.output(13, GPIO.HIGH)
 
-#For counterclockwise control
+    # Wait
+    time.sleep(3)
 
-# Motor A
-GPIO.output(12, GPIO.LOW)  # Set AIN1
-GPIO.output(11, GPIO.HIGH)   # Set AIN2
+    #For counterclockwise control
 
-# Motor B
-GPIO.output(15, GPIO.LOW)  # Set BIN1
-GPIO.output(16, GPIO.HIGH)   # Set BIN2
-# Set motor speed with PWMA and PWMB
-GPIO.output(7, GPIO.HIGH)   # Motor A
-GPIO.output(18, GPIO.HIGH)  # Motor B
+    # Motor A
+    GPIO.output(12, GPIO.LOW)  # Set AIN1
+    GPIO.output(11, GPIO.HIGH)   # Set AIN2
 
-#Disable standby with STBY
-GPIO.output(13, GPIO.HIGH)
+    # Motor B
+    GPIO.output(15, GPIO.LOW)  # Set BIN1
+    GPIO.output(16, GPIO.HIGH)   # Set BIN2
+    # Set motor speed with PWMA and PWMB
+    GPIO.output(7, GPIO.HIGH)   # Motor A
+    GPIO.output(18, GPIO.HIGH)  # Motor B
 
-# Wait
-time.sleep(3)
+    #Disable standby with STBY
+    GPIO.output(13, GPIO.HIGH)
 
-# Reset all GPIO pins
+    # Wait
+    time.sleep(3)
 
-GPIO.output(7, GPIO.LOW)     # PWMA
-GPIO.output(11, GPIO.LOW)    # AIN2
-GPIO.output(12, GPIO.LOW)    # AIN1
-GPIO.output(13, GPIO.LOW)    # STBY
-GPIO.output(15, GPIO.LOW)    # BIN1
-GPIO.output(16, GPIO.LOW)    # BIN2
-GPIO.output(18, GPIO.LOW)    # PWMB
+    # Reset all GPIO pins
+
+    GPIO.output(7, GPIO.LOW)     # PWMA
+    GPIO.output(11, GPIO.LOW)    # AIN2
+    GPIO.output(12, GPIO.LOW)    # AIN1
+    GPIO.output(13, GPIO.LOW)    # STBY
+    GPIO.output(15, GPIO.LOW)    # BIN1
+    GPIO.output(16, GPIO.LOW)    # BIN2
+    GPIO.output(18, GPIO.LOW)    # PWMB
 
