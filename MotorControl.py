@@ -55,7 +55,16 @@ while True:
         # Tell app message was recieved
         conn.sendall("Server Says: Recieved")
 
-        if data == 'Motor1C':
+
+        # Splits two recieved numbers into seperate strings
+        datalist = data.split()
+        
+        # Convert strings to integers
+        motor1 = int(datalist[0])
+        motor2 = int(datalist[1])
+
+    
+        if motor1 < Current1:
             
             # Clockwise control of Motor A
             GPIO.output(12, GPIO.HIGH)  # Set AIN1
@@ -66,9 +75,9 @@ while True:
             
             #Disable standby with STBY
             GPIO.output(13, GPIO.HIGH)
-            
-        elif data == 'Motor1CC':
-            
+
+        elif motor1 > Current1:
+
             # Counterclockwise control of Motor A
             GPIO.output(12, GPIO.LOW)  # Set AIN1
             GPIO.output(11, GPIO.HIGH)   # Set AIN2
@@ -79,15 +88,16 @@ while True:
             #Disable standby with STBY
             GPIO.output(13, GPIO.HIGH)
 
-        elif data == 'Motor1S':
-            
-            GPIO.output(7, GPIO.LOW)     # PWMA
-            GPIO.output(11, GPIO.LOW)    # AIN2
-            GPIO.output(12, GPIO.LOW)    # AIN1
-            GPIO.output(13, GPIO.LOW)    # STBY
 
-        elif data == 'Motor2C':
-            
+        # Turn off Motor A
+        GPIO.output(7, GPIO.LOW)     # PWMA
+        GPIO.output(11, GPIO.LOW)    # AIN2
+        GPIO.output(12, GPIO.LOW)    # AIN1
+        GPIO.output(13, GPIO.LOW)    # STBY
+
+
+        if motor2 < Current2:
+
             # Clockwise control of Motor B
             GPIO.output(15, GPIO.HIGH)  # Set BIN1
             GPIO.output(16, GPIO.LOW)   # Set BIN2
@@ -98,7 +108,8 @@ while True:
             #Disable standby with STBY
             GPIO.output(13, GPIO.HIGH)
 
-        elif data == 'Motor2CC':
+
+        elif motor2 > Current2:
 
             # Counterclockwise control of Motor B
             GPIO.output(15, GPIO.LOW)  # Set BIN1
@@ -110,12 +121,12 @@ while True:
             #Disable standby with STBY
             GPIO.output(13, GPIO.HIGH)
 
-        elif data == 'Motor2S':
+        # Turn off Motor B
+        GPIO.output(13, GPIO.LOW)    # STBY
+        GPIO.output(15, GPIO.LOW)    # BIN1
+        GPIO.output(16, GPIO.LOW)    # BIN2
+        GPIO.output(18, GPIO.LOW)    # PWMB
 
-            GPIO.output(13, GPIO.LOW)    # STBY
-            GPIO.output(15, GPIO.LOW)    # BIN1
-            GPIO.output(16, GPIO.LOW)    # BIN2
-            GPIO.output(18, GPIO.LOW)    # PWMB
 
     except socket.error:
         print "Error Occured."
