@@ -152,6 +152,9 @@ GPIO.output(15, GPIO.LOW)    # BIN1
 GPIO.output(16, GPIO.LOW)    # BIN2
 GPIO.output(18, GPIO.LOW)    # PWMB
 
+# Release GPIO pins
+GPIO.cleanup()
+
 # Shutdown Pi
 #call("sudo nohup shutdown -h now", shell=True)
 
