@@ -7,6 +7,7 @@
 import time
 import RPi.GPIO as GPIO
 import socket
+from subprocess import call
 
 # GPIO pins setup with RPi
 GPIO.setmode(GPIO.BOARD)
@@ -88,6 +89,8 @@ while True:
             #Disable standby with STBY
             GPIO.output(13, GPIO.HIGH)
 
+        # Wait until at correct position
+        while motor1 != Current1:
 
         # Turn off Motor A
         GPIO.output(7, GPIO.LOW)     # PWMA
@@ -121,6 +124,9 @@ while True:
             #Disable standby with STBY
             GPIO.output(13, GPIO.HIGH)
 
+        # Wait until at correct position
+        while motor2 != Current2:
+
         # Turn off Motor B
         GPIO.output(13, GPIO.LOW)    # STBY
         GPIO.output(15, GPIO.LOW)    # BIN1
@@ -145,4 +151,7 @@ GPIO.output(13, GPIO.LOW)    # STBY
 GPIO.output(15, GPIO.LOW)    # BIN1
 GPIO.output(16, GPIO.LOW)    # BIN2
 GPIO.output(18, GPIO.LOW)    # PWMB
+
+# Shutdown Pi
+#call("sudo nohup shutdown -h now", shell=True)
 
