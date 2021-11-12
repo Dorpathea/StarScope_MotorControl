@@ -37,7 +37,7 @@ s.listen(5)
 while True:
 
     # Establish a connection with the client
-    c, addr = s.accept
+    c, addr = s.accept()
     # print ('Got connection from', addr)
 
     # Send a thank you message to client
