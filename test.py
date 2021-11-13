@@ -151,6 +151,7 @@ mydict = {0: "01111111",
 # GPIO pins setup with RPi
 GPIO.setmode(GPIO.BCM)
 
+# Encoder A
 GPIO.setup(27, GPIO.IN)    # 1
 GPIO.setup(22, GPIO.IN)    # 2
 GPIO.setup(5, GPIO.IN)     # 3
@@ -161,12 +162,25 @@ GPIO.setup(23, GPIO.IN)    # 7
 GPIO.setup(24, GPIO.IN)    # 8
 
 
+# Encoder B
+GPIO.setup(2, GPIO.IN)      # 1
+GPIO.setup(3, GPIO.IN)      # 2
+GPIO.setup(4, GPIO.IN)      # 3
+GPIO.setup(17, GPIO.IN)     # 4
+GPIO.setup(10, GPIO.IN)     # 5
+GPIO.setup(9, GPIO.IN)      # 6
+GPIO.setup(11, GPIO.IN)     # 7
+GPIO.setup(19, GPIO.IN)     # 8
+
+
+
+
 x=0
 
 #while(1):
 while(x<6):
     
-    
+    # Setting to input values
     a =GPIO.input(24)
     b =GPIO.input(23)
     c =GPIO.input(26)
@@ -176,8 +190,19 @@ while(x<6):
     g =GPIO.input(22)
     h =GPIO.input(27)
 
+    a2 =GPIO.input(19)
+    b2 =GPIO.input(11)
+    c2 =GPIO.input(9)
+    d2 =GPIO.input(10)
+    e2 =GPIO.input(17)
+    f2 =GPIO.input(4)
+    g2 =GPIO.input(3)
+    h2 =GPIO.input(2)
 
     print(a,b,c,d,e,f,g,h)
+
+    print(a2,b2,c2,d2,e2,f2,g2,h2)
+
 #    print(a)
     
     # Convert values to string values and combine them
@@ -190,20 +215,33 @@ while(x<6):
     gS =str(g)
     hS =str(h)
 
+    a2S =str(a2)
+    b2S =str(b2)
+    c2S =str(c2)
+    d2S =str(d2)
+    e2S =str(e2)
+    f2S =str(f2)
+    g2S =str(g2)
+    h2S =str(h2)
+
     Fstring = aS + bS + cS + dS + eS + fS + gS +hS
 
-    #print(Fstring)
+    Fstring2 = a2S + b2S + c2S + d2S + e2S + f2S + g2S +h2S
 
+    print(Fstring)
+
+    print(Fstring2)
     #Fstring = "00111111"
 
-    keysList = searchKeysByVal(mydict, Fstring)
+    Encoder1 = searchKeysByVal(mydict, Fstring)
+    print(Encoder1)
+    Encoder2 = searchKeysByVal(mydict, Fstring2)
+    print(Encoder2)
 
-    print(keysList)
+ #   intit = keysList[0]
 
-    intit = keysList[0]
-
-    if (intit == 0):
-        print("yes")
+ #   if (intit == 0):
+  #      print("yes")
 
     time.sleep(1)
 
