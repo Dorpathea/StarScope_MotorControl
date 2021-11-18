@@ -175,10 +175,10 @@ GPIO.setup(19, GPIO.IN)     # 8
 
 
 
-x=0
+#x=0
 
 #while(1):
-while(x<6):
+while True:
     
     # Setting to input values
     a =GPIO.input(24)
@@ -199,9 +199,9 @@ while(x<6):
     g2 =GPIO.input(3)
     h2 =GPIO.input(2)
 
-    print(a,b,c,d,e,f,g,h)
+    #print(a,b,c,d,e,f,g,h)
 
-    print(a2,b2,c2,d2,e2,f2,g2,h2)
+    #print(a2,b2,c2,d2,e2,f2,g2,h2)
 
 #    print(a)
     
@@ -228,15 +228,20 @@ while(x<6):
 
     Fstring2 = a2S + b2S + c2S + d2S + e2S + f2S + g2S +h2S
 
-    print(Fstring)
+    print("Binary of Encoder1:", Fstring)
 
-    print(Fstring2)
-    #Fstring = "00111111"
+    print("Binary of Encoder2:", Fstring2)
 
     Encoder1 = searchKeysByVal(mydict, Fstring)
-    print(Encoder1)
+    Current1 = Encoder1[0]
+    print("Encoder1 value", Current1)
+
     Encoder2 = searchKeysByVal(mydict, Fstring2)
-    print(Encoder2)
+    Current2 = Encoder2[0]
+    print("Encoder2 value", Current2)
+
+    print(" ")
+
 
  #   intit = keysList[0]
 
@@ -245,7 +250,7 @@ while(x<6):
 
     time.sleep(1)
 
-    x+=1
+   # x+=1
 
 GPIO.cleanup()
 

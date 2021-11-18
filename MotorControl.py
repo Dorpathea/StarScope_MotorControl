@@ -282,27 +282,6 @@ while True:
         Current2 = Encoder2[0]
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
         if motor1 < Current1:
             
             # Clockwise control of Motor A
