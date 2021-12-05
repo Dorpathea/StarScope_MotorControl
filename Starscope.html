@@ -1,0 +1,851 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Apache2 Debian Default Page: It works</title>
+    <style type="text/css" media="screen">
+  * {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+  }
+
+  body, html {
+    padding: 3px 3px 3px 3px;
+
+    background-color: #D8DBE2;
+
+    font-family: Verdana, sans-serif;
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  div.main_page {
+    position: relative;
+    display: table;
+
+    width: 800px;
+
+    margin-bottom: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0px 0px 0px 0px;
+
+    border-width: 2px;
+    border-color: #212738;
+    border-style: solid;
+
+    background-color: #FFFFFF;
+  }
+
+
+
+
+
+
+
+import { StatusBar } from 'expo-status-bar';
+import React, { useState, useEffect } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, SafeAreaView } from 'react-native';
+//import * as Permissions from 'expo-permissions';
+import * as Location from 'expo-location';
+import TcpSocket from 'react-native-tcp-socket';
+//import net from 'react-native-tcp';
+
+//import io from 'socket.io-client'
+//let socket = io(`http://localhost:8000`)
+
+
+
+
+
+/*****************CPP CODE****************************/
+
+
+function getMyState(star_RA, star_DEC, LON, LAT, tooLow) {
+
+    var ALT = 0.0;	    // Target altitude
+    var AZ = 0.0;		// Target azimuth
+
+
+    let enc_b = 0.0;	// Desired state of bottom encoder
+    let enc_t = 0.0;	// Desired state of top encoder
+
+    let secondRotation = 0.0;
+
+
+    // Get target coordinates
+    ALT = getALT(star_RA, star_DEC, LON, LAT);
+    AZ = getAZ(star_RA, star_DEC, LON, LAT);
+
+
+    // Convert target coordinates to encoder positons
+    // 128 possible positions (0-127), increasing with clockwise rotation
+    // Bottom econder: position 0 faces due north
+    //				   1.78 degrees between states
+    // 
+    // Top encoder: position 0 faces straight forward
+    //				1.91 degrees between states
+
+    // Top encoder
+    //enc_t = Math.round((ALT / 1.91));
+    enc_t = Math.round(ALT / 1.91);
+    
+
+    // Bottom encoder is mounted upside down
+    if (Math.round(AZ / 1.78) < 128.0) {
+        enc_b = 128.0 - Math.round(AZ / 1.78);
+        secondRotation = 0.0;
+    }
+    else if (Math.round(AZ / 1.78) == 128.0) {
+        enc_b = 0.0;
+        secondRotation = 1;
+    }
+    else {
+        enc_b = 256.0 - Math.round(AZ / 1.78);
+        secondRotation = 1;
+    }
+
+
+    // Check if star is below horizon
+    if (ALT < 0) {
+        tooLow = 1;
+    }
+    else {
+        tooLow = 0;
+    }
+
+
+    // Send signal to pi
+    if (tooLow == 0) {
+        //client.write(enc_t, enc_b, secondRotation);
+        alert('Star selected.');
+        //alert(ALT);
+    } else {
+        alert('Selected star currently below horizon - select another.');
+        //alert(ALT);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/********************GETCOORDS***********************/
+
+function getALT(RA_hr, DEC, LON, LAT) {
+
+    // Get current time
+    let hr = new Date().getHours();
+    let min = new Date().getMinutes();
+    let sec = new Date().getSeconds();
+
+    // Convert right ascension hrs to deg (hrs*15)
+    let RA = RA_hr * 15.0;
+
+    // Find the time in days from J2000, including the fraction of a day (D)
+    var D = getD(hr, min, sec);
+
+    // Find universal time in decimal hours
+    let UT = (hr + ((min + (sec / 60.0)) / 60.0)) + 4.0;	// 4 is added because usage in ET is assumed
+
+    // Find local sidereal time (LST)
+    let LST = 100.46 + 0.985647 * D + LON + 15.0 * UT;
+
+    // Ensure LST is within 0-360
+    //if (LST < 0.0) {
+    //    LST += 360.0;
+    //}
+    //else if (LST > 360.0) {
+    //    LST -= 360.0;
+    //}
+
+    while (LST < 0.0) {
+        LST += 360.0;
+    }
+    while (LST > 360.0) {
+        LST -= 360.0;
+    }
+    
+   
+
+
+    // Calculate hour angle
+    let HA = LST - RA;
+    
+
+    // Ensure HA is within 0-360
+    if (HA < 0.0) {
+        HA += 360.0;
+    }
+    else if (HA > 360.0) {
+        HA -= 360.0;
+    }
+
+    // Convert to radians
+    HA = HA * 3.14159/180.0;
+    DEC = DEC * 3.14159 / 180.0;
+    LAT = LAT * 3.14159 / 180.0;
+
+    // Calculate altitude
+    ALT = Math.sin(DEC) * Math.sin(LAT) + Math.cos(DEC) * Math.cos(LAT) * Math.cos(HA);
+    ALT = Math.asin(ALT);
+
+    // Convert back to degrees
+    ALT = ALT * 180.0 / 3.14159;
+
+    return (ALT);
+
+}
+
+
+
+
+
+
+
+function getAZ(RA_hr, DEC, LON, LAT) {
+
+    // Get current time
+    let hr = new Date().getHours();
+    let min = new Date().getMinutes();
+    let sec = new Date().getSeconds();
+
+    // Convert right ascension hrs to deg (hrs*15)
+    let RA = RA_hr * 15.0;
+
+    // Find the time in days from J2000, including the fraction of a day (D)
+    var D = getD(hr, min, sec);
+
+    // Find universal time in decimal hours
+    let UT = (hr + ((min + (sec / 60.0)) / 60.0)) + 4.0;	// 4 is added because usage in ET is assumed
+
+
+    // Find local sidereal time (LST)
+    let LST = 100.46 + 0.985647 * D + LON + 15.0 * UT;
+
+    // Ensure LST is within 0-360
+    if (LST < 0.0) {
+        LST += 360.0;
+    }
+    else if (LST > 360.0) {
+        LST -= 360.0;
+    }
+
+
+    // Calculate hour angle
+    let HA = LST - RA;
+
+    // Ensure HA is within 0-360
+    if (HA < 0.0) {
+        HA += 360.0;
+    }
+    else if (HA > 360.0) {
+        HA -= 360.0;
+    }
+
+
+    // Convert to radians
+    ALT = ALT * 3.14159 / 180.0;
+    DEC = DEC * 3.14159 / 180.0;
+    LAT = LAT * 3.14159 / 180.0;
+
+    // Calculate azimuth
+    let A = (Math.sin(DEC) - Math.sin(ALT) * Math.sin(LAT)) / (Math.cos(ALT) * Math.cos(LAT));
+
+    // Convert back to degrees
+    A = A * 180.0 / 3.14159;
+
+    if (Math.sin(HA) < 0.0) {
+        AZ = A;
+    }
+    else {
+        AZ = 360.0 - A;
+    }
+
+    return (AZ);
+
+}
+
+
+
+function getD(hr, min, sec) {
+    // D is the time in days from J2000, including the fraction of a day
+    let D = 0.0;
+
+    let months2days = 0.0;
+
+    // Get current date info
+    let year = new Date().getFullYear();
+    let month = new Date().getMonth();
+    let date = new Date().getDate();
+
+    // Convert years to days
+    let years2days = (year - 2000.0) * 365.25;
+
+    // Convert months to days
+    if (month >= 1) {
+        months2days = 0.0;
+    }
+    if (month >= 2) {
+        months2days = 31.0;
+    }
+    if (month >= 3) {
+        // Check if leap year
+        if (year % 4 == 0) {
+            months2days += 29.0;
+        }
+        else {
+            months2days += 28.0;
+        }
+    }
+    if (month >= 4) {
+        months2days += 31.0;
+    }
+    if (month >= 5) {
+        months2days += 30.0;
+    }
+    if (month >= 6) {
+        months2days += 31.0;
+    }
+    if (month >= 7) {
+        months2days += 30.0;
+    }
+    if (month >= 8) {
+        months2days += 31.0;
+    }
+    if (month >= 9) {
+        months2days += 31.0;
+    }
+    if (month >= 10) {
+        months2days += 30.0;
+    }
+    if (month >= 11) {
+        months2days += 31.0;
+    }
+    if (month >= 12) {
+        months2days += 30.0;
+    }
+
+    // Convert time to days
+    let time2days = (hr + ((min + (sec / 60.0)) / 60.0)) * 24.0;
+
+    D = years2days + months2days + date + time2days;
+    return (D);
+}
+
+
+
+
+
+export default function App() {
+
+    // Set up variables for location and error message to be stored and updated
+    const [location, setLocation] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
+
+
+
+    // Function for getting user permissons
+    useEffect(() => {
+        (async () => {
+
+            // Ask user for location permissions 
+            let { status } = await Location.requestForegroundPermissionsAsync();
+
+            // Check if permission was not granted and set the error message and exit function if so
+            if (status !== 'granted') {
+                setErrorMsg('Permission to access location was denied');
+                return;
+            }
+            // Git current location position and set it to the location variable 
+            let location = await Location.getCurrentPositionAsync({});
+            setLocation(location);
+        })();
+    }, []);
+
+    // Message to show user if permission is granted or not granted
+    let text = 'Waiting...';
+    if (errorMsg) {
+        text = errorMsg;
+    } else if (location) {
+        text = 'All set!'
+
+        // How to access the longitude and latitude coordinates found
+        //let LAT_str = JSON.stringify(location.coords.latitude);
+        //let LON_str = JSON.stringify(location.coords.longitude);
+
+        var LAT = location.coords.latitude;
+        var LON = location.coords.longitude;
+
+    }
+
+
+    // Location variables
+    //let LAT = location.coords.latitude;
+    //let LON = location.coords.longitude;
+
+    // Telescope state flag
+    let isTurning = 0;  // default: not turning
+
+    // Below/above horizon flag
+    let tooLow = 0;     // default: above horizon
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*********************CONNECTIVITY *********************/
+
+
+   //// const net = require('react-native-tcp-socket');
+
+
+   // // Create socket
+   // // const client = TcpSocket.createConnection(options, () = > {
+   // //client = TcpSocket.createConnection({ port: 12345, host: '100.64.45.180' }, () => {
+   // //    // Write on the socket
+   // //    client.write('Hello server!');
+
+   // ////    // Close socket
+   // ////    // client.destroy();
+   // //},
+   // //);
+
+
+   // // Alternative:
+
+   // //var net = require('net');
+
+   // //var client = new net.Socket();
+
+   // //client.connect(12345, '100.64.45.180', function () {
+   // //    console.log('Connected');
+   // //    client.write('Hello, server! Love, Client.');
+   // //});
+
+
+
+   // //var net = require('net');
+
+   // //var client = new net.Socket();
+   // //client.connect({ port: 59090, host: process.argv[2] });
+
+
+
+
+   // const Net = import('net');
+   //const port = 12345;
+   //const host = '100.64.45.180';
+
+   // const client = new Net.Socket();
+   // client.connect({ port: port, host: host }, function () {
+
+   //     console.log('connection established');
+
+   //     client.write('Hi');
+
+   // });
+
+   // client.on('end', function () {
+   //     console.log('Connection closed!');
+   // });
+
+
+   // //client.on('data', function (data) {
+   // //    console.log('message was received', data);
+   // //});
+
+   // //client.on('error', function (error) {
+   // //    console.log(error);
+   // //});
+
+   // //client.on('close', function () {
+   // //    console.log('Connection closed!');
+   // //});
+
+
+    //var client = TcpSocket.createConnection({ port: 12345, host: '100.64.45.180' });
+
+    ////var net = require('react-native-tcp');
+
+    ////var client = net.createConnection(12345);
+
+    //client.on('connect', function(on) {
+    //    console.log('connected to', on);
+    //});
+
+    ////client.on('data', function (data) {
+    ////    console.log('message was received', data);
+    ////});
+
+    //client.on('error', function(error) {
+    //    console.log(error);
+    //});
+
+    //client.on('close', function() {
+    //    console.log('Connection closed!');
+    //});
+
+    //// Write on the socket
+    //client.write('Hi\r');
+
+    //// Close socket
+    ////client.destroy();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /********************STAR DATABASE*******************/
+
+    // This file contains the RA/DEC coordinated for all stars of interest.
+
+    // RA is in hrs (converted to deg in code)
+    // DEC is in degrees
+
+
+
+    let Aldebaran_RA = 4.6200;
+    let Aldebaran_DEC = 16.5532;
+
+    let Alderamin_RA = 21.3183;
+    let Alderamin_DEC = 62.6786;
+
+    let Alfirk_RA = 21.4821;
+    let Alfirk_DEC = 70.6577;
+
+    let Algol_RA = 3.1604;
+    let Algol_DEC = 41.0432;
+
+    let Alpheratz_RA = 0.1590;
+    let Alpheratz_DEC = 29.2131;
+
+    let Altair_RA = 19.8645;
+    let Altair_DEC = 8.9274;
+
+    let Betelgeuse_RA = 5.9396;
+    let Betelgeuse_DEC = 7.4106;
+
+    let Capella_RA = 5.3056;
+    let Capella_DEC = 46.0192;
+
+    let Castor_RA = 7.6002;
+    let Castor_DEC = 31.8382;
+
+    let Deneb_RA = 20.7031;
+    let Deneb_DEC = 45.3598;
+
+    let Eltanin_RA = 17.9521;
+    let Eltanin_DEC = 51.4860;
+
+    let Gemma_RA = 15.5938;
+    let Gemma_DEC = 26.6401;
+
+    let Hamal_RA = 2.1408;
+    let Hamal_DEC = 23.5676;
+
+    let Mira_RA = 2.3412;
+    let Mira_DEC = -1.1229;
+
+    let Mirfak_RA = 3.4320;
+    let Mirfak_DEC = 49.9393;
+
+    let Polaris_RA = 2.9998;
+    let Polaris_DEC = 89.3579;
+
+    let Pollux_RA = 7.7779;
+    let Pollux_DEC = 27.9710;
+
+    let Procyon_RA = 7.6744;
+    let Procyon_DEC = 5.1675;
+
+    let Rigel_RA = 5.2601;
+    let Rigel_DEC = -7.8246;
+
+    let Vega_RA = 18.6281;
+    let Vega_DEC = 38.8047;
+
+
+
+
+
+
+
+
+
+
+
+
+    // Display desired app interface
+    return (
+        <SafeAreaView style={styles.container}>
+            <ScrollView style={styles.scrollView}>
+
+                <View style={styles.container}>
+                    <Text style={styles.bigBlue}>StarScope</Text>
+                    <Text style={styles.byWho}>Capstone Project by</Text>
+                    <Text style={styles.byWho}>Abby Boucher and</Text>
+                    <Text style={styles.byWho}>Dorothy Harris</Text>
+                    <StatusBar style="auto" />
+
+                    <View style={styles.spacer} />
+
+                    <Text style={styles.infoText}>Make sure that the telescope base board is facing north and is perfectly level to ensure proper alignment.</Text>
+
+                    <View style={styles.spacer} />
+
+
+
+
+
+
+                    <View style={styles.spacer} />
+
+                    <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Aldebaran_RA, Aldebaran_DEC, LON, LAT, tooLow)}
+                        style={styles.button}>
+                        <Text style={styles.buttonText}>Aldebaran</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                    <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Alderamin_RA, Alderamin_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Alderamin</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                    <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Alfirk_RA, Alfirk_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Alfirk</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                    <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Algol_RA, Algol_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Algol</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                    <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Alpheratz_RA, Alpheratz_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Alpheratz</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                    <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Altair_RA, Altair_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Altair</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Betelgeuse_RA, Betelgeuse_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Betelgeuse</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Capella_RA, Capella_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Capella</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Castor_RA, Castor_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Castor</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Deneb_RA, Deneb_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Deneb</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Eltanin_RA, Eltanin_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Eltanin</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Gemma_RA, Gemma_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Gemma</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Hamal_RA, Hamal_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Hamal</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Mira_RA, Mira_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Mira</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Mirfak_RA, Mirfak_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Mirfak</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Polaris_RA, Polaris_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Polaris</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Pollux_RA, Pollux_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Pollux</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Procyon_RA, Procyon_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Procyon</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Rigel_RA, Rigel_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Rigel</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                <TouchableOpacity onPress={() => isTurning ? alert('StarScope turning, please wait.') : getMyState(Vega_RA, Vega_DEC, LON, LAT, tooLow)} style={styles.button}>
+                        <Text style={styles.buttonText}>Vega</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.spacer} />
+
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+
+
+//Set up different styles to set the layout
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#1A2168',
+        alignItems: 'center',
+        display: 'flex',
+        justifyContent: 'space-evenly',
+    },
+    bigBlue: {
+        color: '#F8FF60',
+        fontWeight: 'bold',
+        fontSize: 70,
+    },
+    byWho: {
+        color: '#F8FF60',
+        fontWeight: 'bold',
+        fontSize: 30,
+        alignItems: 'center',
+    },
+    infoText: {
+        color: '#F8FF60',
+        fontSize: 20,
+        alignItems: 'center',
+    },
+    status: {
+        color: '#F8FF60',
+        fontSize: 50,
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: '#000000',
+        fontSize: 20,
+    },
+    button: {
+        height: 30,
+        width: 140,
+        //padding: 20,
+        backgroundColor: "#F8FF60",
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    spacer: {
+        height: 20,
+        backgroundColor: '#fff',
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <button type="button">Click Me!<button>
+
+    </div>
+    <div class="validator">
+    </div>
+  </body>
+</html>
+
