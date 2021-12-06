@@ -31,9 +31,10 @@ while True:
     try:
         data = c.recv(1024)
         # Check if anything was recieved
-        if not data: break
+        if not data.decode(): break
         # Error Checking
-        print ("Client says: "+data)
+        print ("Client says: "+data.decode())
+
     except:
         print("Error")
         # Tell app message was recieved

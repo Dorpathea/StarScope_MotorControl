@@ -186,7 +186,6 @@ GPIO.setup(21, GPIO.OUT)    # PWMB
 
 # Create the socket object
 s = socket.socket()
-# print ("Socket successfully created")
 
 # Reserve a port
 port = 12345
@@ -203,32 +202,27 @@ while True:
 
     # Establish a connection with the client
     c, addr = s.accept()
-    # print ('Got connection from', addr)
-
-    # Send a thank you message to client
-    # c.send('Thank you for connecting')
 
     # Try and recieve a message
     try:
         data = c.recv(1024)
 
         # Check if anything was recieved
-        if not data: break
+        if not data.decode(): break
 
         # Error Checking
-        print "Client says: "+data
-
-        # Tell app message was recieved
-        conn.sendall("Server Says: Recieved")
-
+        print "Client says: "+data.decode()
 
         # Splits two recieved numbers into seperate strings
-        datalist = data.split()
+#        datalist = data.split()
         
         # Convert strings to integers
-        motor1 = int(datalist[0])
-        motor2 = int(datalist[1])
-        state = int(datalist[2])
+#        motor1 = int(datalist[0])
+#        motor2 = int(datalist[1])
+#        state = int(datalist[2])
+
+# Not doing anymore ^ instead putting math here based on which name is given
+# Make dictionary of star names and numbers associated w them to check between
 
         # Finding current state of Encoder A
         a =GPIO.input(24)
