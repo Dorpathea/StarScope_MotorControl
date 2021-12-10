@@ -65,6 +65,13 @@ def getMyState(starRA, starDEC, LON, LAT):
     return total
 
 def getALT(RA_hr, DEC, LON, LAT):
+    HA= 0.0
+    D= 0.0
+    RA= 0.0
+    UT= 0.0
+    LST= 0.0
+    ALT= 0.0
+
     #Get current time
     hr=datetime.now().hour
     mint=datetime.now().minute
@@ -100,20 +107,28 @@ def getALT(RA_hr, DEC, LON, LAT):
         HA= HA - 360.0
 
     # Conver to radians
-    HA=HA * 3.14159 / 180.0
-    DEC=DEC * 3.14159 / 180.0
-    LAT=LAT * 3.14159 / 180.0
+    HA=HA * math.pi / 180.0
+    DEC=DEC * math.pi / 180.0
+    LAT=LAT * math.pi / 180.0
 
     # Calculate altitude
     ALT=math.sin(DEC) * math.sin(LAT) + math.cos(DEC) * math.cos(LAT) * math.cos(HA)
     ALT=math.asin(ALT)
 
     # Convert back to degrees
-    ALT=ALT * 180.0 / 3.14159
+    ALT=ALT * 180.0 / math.pi
 
+    print("ALT: ", ALT)
     return ALT
 
 def getAZ(RA_hr, DEC, LON, LAT, ALT):
+    A= 0.0
+    UT= 0.0
+    LST= 0.0
+    RA= 0.0
+    HA= 0.0
+    D= 0.0
+
     #Get current time
     hr=datetime.now().hour
     mint=datetime.now().minute
@@ -129,7 +144,7 @@ def getAZ(RA_hr, DEC, LON, LAT, ALT):
     UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
 
     # Find local sidereal time (LST)
-    LST=100.46 + 0.985647 * D + LON + 15.0 * UT
+    LST=(100.46 + 0.985647 * D + LON + 15.0 * UT)
 
     # Ensure that LST is within 0-360
     while LST < 0.0:
@@ -149,22 +164,26 @@ def getAZ(RA_hr, DEC, LON, LAT, ALT):
         HA= HA - 360.0
 
     # Convert to radians
-    ALT=ALT * 3.14159 / 180.0
-    DEC=DEC * 3.14159 / 180.0
-    LAT=LAT * 3.14159 / 180.0
+    ALT=ALT * math.pi / 180.0
+    DEC=DEC * math.pi / 180.0
+    LAT=LAT * math.pi / 180.0
+    HA=HA * math.pi / 180.0
 
     # Calculate azimuth
     A= (math.sin(DEC) - math.sin(ALT) * math.sin(LAT)) / (math.cos(ALT) * math.cos(LAT))
 
+    A=math.acos(A)
+
     # Convert back to degrees
-    A=A * 180.0 / 3.14159
+    A=A * 180.0 / math.pi
 
     if (math.sin(HA)) < 0.0:
         AZ=A
 
-    else: 
+    else:
         AZ= 360.0 - A
 
+    print("AZ: ", AZ)
     return AZ
 
 
@@ -180,48 +199,49 @@ def getD(hr, mint, sec):
     years2days = (year - 2000.0) * 365.25
 
     # Convert months to days
-    if month >= 1:
+    if month == 1:
         month2days = 0.0
 
-    if month >= 2:
+    elif month == 2:
         month2days = 31.0
 
-    # Check if leap year
-    if month >= 3:
+    elif month == 3:
+        month2days = 59.0
+
+    elif month == 4:
+        month2days = 90.0
+
+    elif month == 5:
+        month2days = 120.0
+
+    elif month == 6:
+        month2days = 151.0
+
+    elif month == 7:
+        month2days = 181.0
+
+    elif month == 8:
+        month2days = 211.0
+
+    elif month == 9:
+        month2days = 242.0
+
+    elif month == 10:
+        month2days = 272.0
+
+    elif month == 11:
+        month2days = 303.0
+
+    elif month == 12:
+        month2days = 333.0
+
+    # Check if a leap year
+    if month > 2:
         if (year % 4) == 0:
-            month2days += 29.0
-        else:
-            month2days +=28.0
-
-        if month >= 4:
-            month2days += 31.0
-
-            if month >= 5:
-                month2days += 30.0
-
-                if month >= 6:
-                    month2days += 31.0
-
-                    if month >= 7:
-                        month2days += 30.0
-
-                        if month >= 8:
-                            month2days += 30.0
-
-                            if month >= 9:
-                                month2days += 31.0
-
-                                if month >= 10:
-                                    month2days += 30.0
-
-                                    if month >= 11:
-                                        month2days += 31.0
-
-                                        if month >= 12:
-                                            month2days += 30.0
+            month2days += 1.0
 
     # Convert time to days
-    time2days= (hr + ((mint + (sec / 60.0)) / 60.0)) * 24.0
+    time2days= (hr + ((mint + (sec / 60.0)) / 60.0)) / 24.0
 
     D = years2days + month2days + date + time2days
     return D
@@ -288,8 +308,8 @@ while True:
     DEC = starName[1]
 
     # Temporary hard coding lat and lon
-    LAT=44.9
-    LON=-68.7
+    LAT=44.54
+    LON=-68.40
 
     # Return array
     totalt= []
@@ -301,23 +321,16 @@ while True:
     secondROT=totalt[2]
     tooLow=totalt[3]
 
-    print("TooLow")
-    print(tooLow)
+    print("TooLow: ", tooLow)
 
     if tooLow == 1:
         print("error, star too low (below horizon)")
 
     else:
-        print("yay")
-        print(enc_b)
-        print(enc_t)
-        print(secondROT)
+        print("ENC_b: ", enc_b)
+        print("ENC_t: ", enc_t)
+        print("SecondROT: ", secondROT)
 
-     #   print("Error here")
-        # Tell app message was recieved
-        #conn.sendall("Server Says: Recieved")
-        # Splits two recieved numbers into seperate strings
-    # Close the connection with the client
     c.close()
 
 c.close()

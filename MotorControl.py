@@ -9,6 +9,9 @@ import time
 import RPi.GPIO as GPIO
 import socket
 from subprocess import call
+import math
+from datetime import datetime
+
 
 # Function for looking through the dictionary
 def searchKeysByVal(mdict, byval):
@@ -149,6 +152,257 @@ mydict = {0: "01111111",
           126: "01011110",
           127: "01011111"}
 
+# Star names dictionary---> "Name": [RA, DEC]
+Snames = {"Aldebaran": [4.6200, 16.5532],
+          "Alderamin": [21.3183, 62.6786],
+          "Alfirk": [21.4821, 70.6577],
+          "Algol": [3.1604, 41.0432],
+          "Alpheratz": [0.1590, 29.2131],
+          "Altair": [19.8645, 8.9274],
+          "Betelgeuse": [5.9396, 7.4106],
+          "Capella": [5.3056, 46.0192],
+          "Castor": [7.6002, 31.8382],
+          "Deneb": [20.7031, 45.3598],
+          "Eltanin": [17.9521, 51.4860],
+          "Gemma": [15.5938, 26.6401],
+          "Hamal": [2.1408, 23.5676],
+          "Mira": [2.3412, -1.1229],
+          "Mirfak": [3.4320, 49.9393],
+          "Polaris": [2.9998, 89.3579],
+          "Pollux": [7.7779, 27.9710],
+          "Procyon": [7.6744, 5.1675],
+          "Rigel": [5.2601, -7.8246],
+          "Vega": [18.6281, 38.8047]}
+
+
+def getMyState(starRA, starDEC, LON, LAT):
+    ALT=0.0             # Target altitude
+    AZ=0.0              # Target azimuth
+    enc_b=0.0           # Desired state of bottom encoder
+    enc_t=0.0           # Desired state of top encoder
+    secondROT=0.0       # Check if more than one rotation is needed
+    tooLow=0.0          # Check if star is below horizon
+
+    # Get target coordinates
+    ALT=getALT(starRA, starDEC, LON, LAT)
+    AZ=getAZ(starRA, starDEC, LON, LAT, ALT)
+
+    # Convert target coordinates to encoder positions
+    # 128 possible positions (0-127), increasing with clockwise rotation
+    # Bottom encoder: position 0 faces due north with 1.78 deg between states
+    # Top encoder: position 0 faces straight forward with 1.91 deg between states
+
+    # Top encoder
+    enc_t=round((ALT/1.91))
+
+    # Bottome encoder is mounted upside-down
+    if round((AZ/1.78)) < 128.0:
+        enc_b = (128.0 - round((AZ/1.78)))
+        secondROT=0.0
+
+    elif round((AZ/1.78)) == 128.0:
+        enc_b=0.0
+        secondROT=1
+
+    else:
+        enc_b=(256.0- round((AZ/1.78)))
+        secondROT=1
+
+    # Check if star is below horizon
+    if ALT < 0.0:
+        tooLow=1
+
+    else:
+        tooLow=0.0
+
+    # Return values
+    total= [enc_b, enc_t, secondROT, tooLow]
+    return total
+
+
+def getALT(RA_hr, DEC, LON, LAT):
+    HA= 0.0
+    D= 0.0
+    RA= 0.0
+    UT= 0.0
+    LST= 0.0
+    ALT= 0.0
+
+    #Get current time
+    hr=datetime.now().hour
+    mint=datetime.now().minute
+    sec=datetime.now().second
+
+    # Convert right ascension hrs to deg (hrs*15)
+    RA=RA_hr*15.0
+    
+    # Find the time in days from J2000, including the fraction of a day (D)
+    D=getD(hr, mint, sec)
+
+    # Find the universal time in decimal hrs
+    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
+
+    # Find local sidereal time (LST)
+    LST=100.46 + 0.985647 * D + LON + 15.0 * UT
+
+    # Ensure that LST is within 0-360
+    while LST < 0.0:
+        LST= LST + 360.0
+
+    while LST > 360.0:
+        LST= LST - 360.0
+
+    # Calculate hour angle
+    HA=LST - RA
+
+    # Ensure HA is within 0-360
+    if HA < 0.0:
+        HA= HA + 360.0
+
+    elif HA > 360.0:
+        HA= HA - 360.0
+
+    # Conver to radians
+    HA=HA * math.pi / 180.0
+    DEC=DEC * math.pi / 180.0
+    LAT=LAT * math.pi / 180.0
+
+    # Calculate altitude
+    ALT=math.sin(DEC) * math.sin(LAT) + math.cos(DEC) * math.cos(LAT) * math.cos(HA)
+    ALT=math.asin(ALT)
+
+    # Convert back to degrees
+    ALT=ALT * 180.0 / math.pi
+
+    print("ALT: ", ALT)
+    return ALT
+
+
+def getAZ(RA_hr, DEC, LON, LAT, ALT):
+    A= 0.0
+    UT= 0.0
+    LST= 0.0
+    RA= 0.0
+    HA= 0.0
+    D= 0.0
+
+    #Get current time
+    hr=datetime.now().hour
+    mint=datetime.now().minute
+    sec=datetime.now().second
+
+    # Convert right ascension hrs to deg (hrs*15)
+    RA=RA_hr*15.0
+    
+    # Find the time in days from J2000, including the fraction of a day (D)
+    D=getD(hr, mint, sec)
+
+    # Find the universal time in decimal hrs
+    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
+
+    # Find local sidereal time (LST)
+    LST=(100.46 + 0.985647 * D + LON + 15.0 * UT)
+
+    # Ensure that LST is within 0-360
+    while LST < 0.0:
+        LST= LST + 360.0
+
+    while LST > 360.0:
+        LST= LST - 360.0
+
+    # Calculate hour angle
+    HA=LST - RA
+
+    # Ensure HA is within 0-360
+    if HA < 0.0:
+        HA= HA + 360.0
+
+    elif HA > 360.0:
+        HA= HA - 360.0
+
+    # Convert to radians
+    ALT=ALT * math.pi / 180.0
+    DEC=DEC * math.pi / 180.0
+    LAT=LAT * math.pi / 180.0
+    HA=HA * math.pi / 180.0
+
+    # Calculate azimuth
+    A= (math.sin(DEC) - math.sin(ALT) * math.sin(LAT)) / (math.cos(ALT) * math.cos(LAT))
+
+    A=math.acos(A)
+
+    # Convert back to degrees
+    A=A * 180.0 / math.pi
+
+    if (math.sin(HA)) < 0.0:
+        AZ=A
+
+    else:
+        AZ= 360.0 - A
+
+    print("AZ: ", AZ)
+    return AZ
+
+
+def getD(hr, mint, sec):
+    # D is the time in days from J2000, including the fraction of a day
+    D = 0.0
+    month2days=0.0
+    year=datetime.now().year
+    month=datetime.now().month
+    date=datetime.now().day
+
+    # Convert years to days
+    years2days = (year - 2000.0) * 365.25
+
+    # Convert months to days
+    if month == 1:
+        month2days = 0.0
+
+    elif month == 2:
+        month2days = 31.0
+
+    elif month == 3:
+        month2days = 59.0
+
+    elif month == 4:
+        month2days = 90.0
+
+    elif month == 5:
+        month2days = 120.0
+
+    elif month == 6:
+        month2days = 151.0
+
+    elif month == 7:
+        month2days = 181.0
+
+    elif month == 8:
+        month2days = 211.0
+
+    elif month == 9:
+        month2days = 242.0
+
+    elif month == 10:
+        month2days = 272.0
+
+    elif month == 11:
+        month2days = 303.0
+
+    elif month == 12:
+        month2days = 333.0
+
+    # Check if a leap year
+    if month > 2:
+        if (year % 4) == 0:
+            month2days += 1.0
+
+    # Convert time to days
+    time2days= (hr + ((mint + (sec / 60.0)) / 60.0)) / 24.0
+
+    D = years2days + month2days + date + time2days
+    return D
+
 
 # Set GPIO mode to the GPIO pins (Not the board values)
 GPIO.setmode(GPIO.BCM)
@@ -204,150 +458,166 @@ while True:
     c, addr = s.accept()
 
     # Try and recieve a message
-    try:
-        data = c.recv(1024)
+    data = c.recv(1024)
+    result= data.decode()
 
-        # Check if anything was recieved
-        if not data.decode(): break
+    # Check if anything was recieved
+    if not result: break
 
-        # Error Checking
-        print "Client says: "+data.decode()
+    # Error Checking
+    print "Client says: "+ result
 
-        # Splits two recieved numbers into seperate strings
-#        datalist = data.split()
-        
-        # Convert strings to integers
-#        motor1 = int(datalist[0])
-#        motor2 = int(datalist[1])
-#        state = int(datalist[2])
+    # ENCODER 
+    # Finding current state of Encoder A
+    a =GPIO.input(24)
+    b =GPIO.input(23)
+    c =GPIO.input(26)
+    d =GPIO.input(13)
+    e =GPIO.input(6)
+    f =GPIO.input(5)
+    g =GPIO.input(22)
+    h =GPIO.input(27)
 
-# Not doing anymore ^ instead putting math here based on which name is given
-# Make dictionary of star names and numbers associated w them to check between
+    # Finding current state of Encoder B
+    a2 =GPIO.input(19)
+    b2 =GPIO.input(11)
+    c2 =GPIO.input(9)
+    d2 =GPIO.input(10)
+    e2 =GPIO.input(17)
+    f2 =GPIO.input(4)
+    g2 =GPIO.input(3)
+    h2 =GPIO.input(2)
 
-        # Finding current state of Encoder A
-        a =GPIO.input(24)
-        b =GPIO.input(23)
-        c =GPIO.input(26)
-        d =GPIO.input(13)
-        e =GPIO.input(6)
-        f =GPIO.input(5)
-        g =GPIO.input(22)
-        h =GPIO.input(27)
+    # Convert values to string values and combine them for Encoder A
+    aS =str(a)
+    bS =str(b)
+    cS =str(c)
+    dS =str(d)
+    eS =str(e)
+    fS =str(f)
+    gS =str(g)
+    hS =str(h)
+    Fstring = aS + bS + cS + dS + eS + fS + gS +hS
 
-        # Finding current state of Encoder B
-        a2 =GPIO.input(19)
-        b2 =GPIO.input(11)
-        c2 =GPIO.input(9)
-        d2 =GPIO.input(10)
-        e2 =GPIO.input(17)
-        f2 =GPIO.input(4)
-        g2 =GPIO.input(3)
-        h2 =GPIO.input(2)
-
-        # Convert values to string values and combine them for Encoder A
-        aS =str(a)
-        bS =str(b)
-        cS =str(c)
-        dS =str(d)
-        eS =str(e)
-        fS =str(f)
-        gS =str(g)
-        hS =str(h)
-        Fstring = aS + bS + cS + dS + eS + fS + gS +hS
-
-        # Convert values to string values and combine them for Encoder B
-        a2S =str(a2)
-        b2S =str(b2)
-        c2S =str(c2)
-        d2S =str(d2)
-        e2S =str(e2)
-        f2S =str(f2)
-        g2S =str(g2)
-        h2S =str(h2)
-        Fstring2 = a2S + b2S + c2S + d2S + e2S + f2S + g2S +h2S
+    # Convert values to string values and combine them for Encoder B
+    a2S =str(a2)
+    b2S =str(b2)
+    c2S =str(c2)
+    d2S =str(d2)
+    e2S =str(e2)
+    f2S =str(f2)
+    g2S =str(g2)
+    h2S =str(h2)
+    Fstring2 = a2S + b2S + c2S + d2S + e2S + f2S + g2S +h2S
 
 
-        # Search dictionary for what state it's currently in for the Encoder
-        Encoder1 = searchKeysByVal(mydict, Fstring)
-        Encoder2 = searchKeysByVal(mydict, Fstring2)
+    # Search dictionary for what state it's currently in for the Encoder
+    Encoder1 = searchKeysByVal(mydict, Fstring)
+    Encoder2 = searchKeysByVal(mydict, Fstring2)
 
-        # Change into an int for comparison
-        Current1 = Encoder1[0]
-        Current2 = Encoder2[0]
+    # Change into an int for comparison
+    Current1 = Encoder1[0]
+    Current2 = Encoder2[0]
+    
+    # MOTOR TURN MATH
+    # Get RA and DEC of desired star
+    starname= []
+    starname= Snames.get(result)
+
+    # Separate parts of array
+    RA= starname[0]
+    DEC= starname[1]
+
+    # Temporary hard coding lat and lon
+    LAT=44.54
+    LON=-68.40
+
+    # Return array of desired encoder values
+    totalt= []
+    totalt= getMyState(RA, DEC, LON, LAT)
+
+    # Separate parts of array
+    enc_b= totalt[0]
+    enc_t= totalt[1]
+    SecondROT= totalt[2]
+    tooLow= totalt[3]
+
+    print("TooLow: ", tooLow)
+
+    if tooLow == 1:
+        print("Error, star is too low (below horizon)")
 
 
-        if motor1 < Current1:
+
+    elif enc_t < Current1:
             
-            # Clockwise control of Motor A
-            GPIO.output(7, GPIO.HIGH)  # Set AIN1
-            GPIO.output(8, GPIO.LOW)   # Set AIN2
+        # Clockwise control of Motor A
+        GPIO.output(7, GPIO.HIGH)  # Set AIN1
+        GPIO.output(8, GPIO.LOW)   # Set AIN2
             
-            # Set motor speed with PWMA
-            GPIO.output(25, GPIO.HIGH)   # Motor A
+        # Set motor speed with PWMA
+        GPIO.output(25, GPIO.HIGH)   # Motor A
             
-            #Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
+        #Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
 
-        elif motor1 > Current1:
+    elif enc_t > Current1:
 
-            # Counterclockwise control of Motor A
-            GPIO.output(7, GPIO.LOW)  # Set AIN1
-            GPIO.output(8, GPIO.HIGH)   # Set AIN2
+        # Counterclockwise control of Motor A
+        GPIO.output(7, GPIO.LOW)  # Set AIN1
+        GPIO.output(8, GPIO.HIGH)   # Set AIN2
             
-            # Set motor speed with PWMA
-            GPIO.output(25, GPIO.HIGH)   # Motor A
+        # Set motor speed with PWMA
+        GPIO.output(25, GPIO.HIGH)   # Motor A
             
-            #Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
 
-        # Wait until at correct position
-        while motor1 != Current1:
+    # Wait until at correct position
+    while enc_t != Current1:
 
-        # Turn off Motor A
-        GPIO.output(25, GPIO.LOW)     # PWMA
-        GPIO.output(8, GPIO.LOW)    # AIN2
-        GPIO.output(7, GPIO.LOW)    # AIN1
-        GPIO.output(12, GPIO.LOW)    # STBY
+    # Turn off Motor A
+    GPIO.output(25, GPIO.LOW)     # PWMA
+    GPIO.output(8, GPIO.LOW)    # AIN2
+    GPIO.output(7, GPIO.LOW)    # AIN1
+    GPIO.output(12, GPIO.LOW)    # STBY
 
 
-        if motor2 < Current2:
+    if enc_b < Current2:
 
-            # Clockwise control of Motor B
-            GPIO.output(16, GPIO.HIGH)  # Set BIN1
-            GPIO.output(20, GPIO.LOW)   # Set BIN2
+        # Clockwise control of Motor B
+        GPIO.output(16, GPIO.HIGH)  # Set BIN1
+        GPIO.output(20, GPIO.LOW)   # Set BIN2
             
-            # Set motor speed with PWMB
-            GPIO.output(21, GPIO.HIGH)  # Motor B
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
             
-            #Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
 
 
-        elif motor2 > Current2:
+    elif enc_b > Current2:
 
-            # Counterclockwise control of Motor B
-            GPIO.output(16, GPIO.LOW)  # Set BIN1
-            GPIO.output(20, GPIO.HIGH)   # Set BIN2
+        # Counterclockwise control of Motor B
+        GPIO.output(16, GPIO.LOW)  # Set BIN1
+        GPIO.output(20, GPIO.HIGH)   # Set BIN2
             
-            # Set motor speed with PWMB
-            GPIO.output(21, GPIO.HIGH)  # Motor B
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
             
-            #Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
 
-        # Wait until at correct position
-        while motor2 != Current2:
+    # Wait until at correct position
+    while enc_b != Current2:
 
-        # Turn off Motor B
-        GPIO.output(12, GPIO.LOW)    # STBY
-        GPIO.output(16, GPIO.LOW)    # BIN1
-        GPIO.output(20, GPIO.LOW)    # BIN2
-        GPIO.output(21, GPIO.LOW)    # PWMB
-
-
-    except socket.error:
-        print "Error Occured."
-        break
+    # Turn off Motor B
+    GPIO.output(12, GPIO.LOW)    # STBY
+    GPIO.output(16, GPIO.LOW)    # BIN1
+    GPIO.output(20, GPIO.LOW)    # BIN2
+    GPIO.output(21, GPIO.LOW)    # PWMB
+    
+    c.close()
 
 # Close the connection with the client
 c.close()
@@ -356,13 +626,13 @@ c.close()
 # Reset all GPIO pins
 # Make sure everything has stopped moving
 # Not sure if needed
-GPIO.output(25, GPIO.LOW)     # PWMA
+GPIO.output(25, GPIO.LOW)   # PWMA
 GPIO.output(8, GPIO.LOW)    # AIN2
 GPIO.output(7, GPIO.LOW)    # AIN1
-GPIO.output(12, GPIO.LOW)    # STBY
-GPIO.output(16, GPIO.LOW)    # BIN1
-GPIO.output(20, GPIO.LOW)    # BIN2
-GPIO.output(21, GPIO.LOW)    # PWMB
+GPIO.output(12, GPIO.LOW)   # STBY
+GPIO.output(16, GPIO.LOW)   # BIN1
+GPIO.output(20, GPIO.LOW)   # BIN2
+GPIO.output(21, GPIO.LOW)   # PWMB
 
 # Release GPIO pins
 GPIO.cleanup()
