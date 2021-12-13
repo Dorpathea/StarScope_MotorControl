@@ -435,72 +435,140 @@ def getD(hr, mint, sec):
     D = years2days + month2days + date + time2days
     return D
 
+def turnTopMotor(enc_t):
 
-# Set GPIO mode to the GPIO pins (Not the board values)
-GPIO.setmode(GPIO.BCM)
+    # Determine encoders position 
+    Encoders= []
+    Encoders= encoderValue()
 
-# GPIO pins for Encoder A
-GPIO.setup(27, GPIO.IN)    # 1
-GPIO.setup(22, GPIO.IN)    # 2
-GPIO.setup(5, GPIO.IN)     # 3
-GPIO.setup(6, GPIO.IN)     # 4
-GPIO.setup(13, GPIO.IN)    # 5
-GPIO.setup(26, GPIO.IN)    # 6
-GPIO.setup(23, GPIO.IN)    # 7
-GPIO.setup(24, GPIO.IN)    # 8
+    Current1= Encoders[0]
+
+   if enc_t < Current1:
+            
+        # Clockwise control of Motor A
+        GPIO.output(7, GPIO.HIGH)  # Set AIN1
+        GPIO.output(8, GPIO.LOW)   # Set AIN2
+            
+        # Set motor speed with PWMA
+        GPIO.output(25, GPIO.HIGH)   # Motor A
+            
+        #Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
+
+    elif enc_t > Current1:
+
+        # Counterclockwise control of Motor A
+        GPIO.output(7, GPIO.LOW)  # Set AIN1
+        GPIO.output(8, GPIO.HIGH)   # Set AIN2
+            
+        # Set motor speed with PWMA
+        GPIO.output(25, GPIO.HIGH)   # Motor A
+            
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
+
+    # Wait until at correct position
+    while Current1 != enc_t:
+        Encoders= encoderValue()
+        Current1= Encoders[0]
 
 
-# GPIO pins for Encoder B
-GPIO.setup(2, GPIO.IN)      # 1
-GPIO.setup(3, GPIO.IN)      # 2
-GPIO.setup(4, GPIO.IN)      # 3
-GPIO.setup(17, GPIO.IN)     # 4
-GPIO.setup(10, GPIO.IN)     # 5
-GPIO.setup(9, GPIO.IN)      # 6
-GPIO.setup(11, GPIO.IN)     # 7
-GPIO.setup(19, GPIO.IN)     # 8
+    # Turn off Motor A
+    GPIO.output(25, GPIO.LOW)     # PWMA
+    GPIO.output(8, GPIO.LOW)    # AIN2
+    GPIO.output(7, GPIO.LOW)    # AIN1
+    GPIO.output(12, GPIO.LOW)    # STBY
 
 
-# GPIO pins setup with RPi
-GPIO.setup(25, GPIO.OUT)    # PWMA
-GPIO.setup(8, GPIO.OUT)     # AIN2
-GPIO.setup(7, GPIO.OUT)     # AIN1
-GPIO.setup(12, GPIO.OUT)    # STBY
-GPIO.setup(16, GPIO.OUT)    # BIN1
-GPIO.setup(20, GPIO.OUT)    # BIN2
-GPIO.setup(21, GPIO.OUT)    # PWMB
+def turnBottomMotor(enc_b, SecondROT):
 
-# Create the socket object
-s = socket.socket()
+    # Determine encoders position 
+    Encoders= []
+    Encoders= encoderValue()
 
-# Reserve a port
-port = 12345
+    Current2= Encoders[1]
 
-# Bind to the port
-s.bind(('', port))
+    if secondROT_now == secondROT:
 
-# Put the socket into listening mode
-s.listen(5)
-# print ("socket is listening")
+        if enc_b < Current2:
 
-# Current secondROT flag declaration
-secondROT_now = 0.0
+            # Clockwise control of Motor B
+            GPIO.output(16, GPIO.HIGH)  # Set BIN1
+            GPIO.output(20, GPIO.LOW)   # Set BIN2
+            
+            # Set motor speed with PWMB
+            GPIO.output(21, GPIO.HIGH)  # Motor B
+            
+            # Disable standby with STBY
+            GPIO.output(12, GPIO.HIGH)
 
-# A forever loop until we interrupt or an error occurs
-while True:
 
-    # Establish a connection with the client
-    c, addr = s.accept()
+        elif enc_b > Current2:
 
-    # Try and recieve a message
-    data = c.recv(1024)
-    result= data.decode()
+            # Counterclockwise control of Motor B
+            GPIO.output(16, GPIO.LOW)  # Set BIN1
+            GPIO.output(20, GPIO.HIGH)   # Set BIN2
+            
+            # Set motor speed with PWMB
+            GPIO.output(21, GPIO.HIGH)  # Motor B
+            
+            # Disable standby with STBY
+            GPIO.output(12, GPIO.HIGH)
 
-    # Check if anything was recieved
-    if not result: break
 
-    # Error Checking
-    print "Client says: "+ result
+    elif secondROT_now > secondROT:
+
+        # Counterclockwise control of Motor B
+        GPIO.output(16, GPIO.LOW)  # Set BIN1
+        GPIO.output(20, GPIO.HIGH)   # Set BIN2
+            
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
+            
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
+
+        # Overshoot corrent position
+        while Current2 != (enc_b-1):
+            Encoders= encoderValue()
+            Current2= Encoders[1]
+
+    elif secondROT_now < secondROT:
+
+        # Clockwise control of Motor B
+        GPIO.output(16, GPIO.HIGH)  # Set BIN1
+        GPIO.output(20, GPIO.LOW)   # Set BIN2
+            
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
+            
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
+
+        # Overshooot correct position
+        while Current2 != (enc_b+1):
+            Encoders= encoderValue()
+            Current2= Encoders[1]
+
+
+
+     # Wait until at correct position
+    while Current2 != enc_b:
+        Encoders= encoderValue()
+        Current2= Encoders[1]
+
+    # Turn off Motor B
+    GPIO.output(12, GPIO.LOW)    # STBY
+    GPIO.output(16, GPIO.LOW)    # BIN1
+    GPIO.output(20, GPIO.LOW)    # BIN2
+    GPIO.output(21, GPIO.LOW)    # PWMB
+    
+    # Update secondROT_now
+    secondROT_now = secondROT
+
+
+
+def encoderValue():
 
     # ENCODER 
     # Finding current state of Encoder A
@@ -553,7 +621,68 @@ while True:
     # Change into an int for comparison
     Current1 = Encoder1[0]
     Current2 = Encoder2[0]
-    
+
+    values = [Current1, Current2]
+    return values
+
+
+# Set GPIO mode to the GPIO pins (Not the board values)
+GPIO.setmode(GPIO.BCM)
+
+# GPIO pins for Encoder A
+GPIO.setup(27, GPIO.IN)    # 1
+GPIO.setup(22, GPIO.IN)    # 2
+GPIO.setup(5, GPIO.IN)     # 3
+GPIO.setup(6, GPIO.IN)     # 4
+GPIO.setup(13, GPIO.IN)    # 5
+GPIO.setup(26, GPIO.IN)    # 6
+GPIO.setup(23, GPIO.IN)    # 7
+GPIO.setup(24, GPIO.IN)    # 8
+
+
+# GPIO pins for Encoder B
+GPIO.setup(2, GPIO.IN)      # 1
+GPIO.setup(3, GPIO.IN)      # 2
+GPIO.setup(4, GPIO.IN)      # 3
+GPIO.setup(17, GPIO.IN)     # 4
+GPIO.setup(10, GPIO.IN)     # 5
+GPIO.setup(9, GPIO.IN)      # 6
+GPIO.setup(11, GPIO.IN)     # 7
+GPIO.setup(19, GPIO.IN)     # 8
+
+
+# Create the socket object
+s = socket.socket()
+
+# Reserve a port
+port = 12345
+
+# Bind to the port
+s.bind(('', port))
+
+# Put the socket into listening mode
+s.listen(5)
+# print ("socket is listening")
+
+# Current secondROT flag declaration
+secondROT_now = 0.0
+
+# A forever loop until we interrupt or an error occurs
+while True:
+
+    # Establish a connection with the client
+    c, addr = s.accept()
+
+    # Try and recieve a message
+    data = c.recv(1024)
+    result= data.decode()
+
+    # Check if anything was recieved
+    if not result: break
+
+    # Error Checking
+    print "Client says: "+ result
+
     # MOTOR TURN MATH
     # Get RA and DEC of desired star
     starname= []
@@ -582,136 +711,30 @@ while True:
     if tooLow == 1:
         print("Error, star is too low (below horizon)")
 
+    else:
 
+        # GPIO pins setup with RPi for Motor A
+        GPIO.setup(25, GPIO.OUT)    # PWMA
+        GPIO.setup(8, GPIO.OUT)     # AIN2
+        GPIO.setup(7, GPIO.OUT)     # AIN1
+        GPIO.setup(12, GPIO.OUT)    # STBY
 
-    elif enc_t < Current1:
-            
-        # Clockwise control of Motor A
-        GPIO.output(7, GPIO.HIGH)  # Set AIN1
-        GPIO.output(8, GPIO.LOW)   # Set AIN2
-            
-        # Set motor speed with PWMA
-        GPIO.output(25, GPIO.HIGH)   # Motor A
-            
-        #Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
+        turnTopMotor(enc_t)
 
-    elif enc_t > Current1:
+        time.sleep(3)
 
-        # Counterclockwise control of Motor A
-        GPIO.output(7, GPIO.LOW)  # Set AIN1
-        GPIO.output(8, GPIO.HIGH)   # Set AIN2
-            
-        # Set motor speed with PWMA
-        GPIO.output(25, GPIO.HIGH)   # Motor A
-            
-        # Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
+        # GPIO pins setup with RPi for Motor B
+        GPIO.setup(16, GPIO.OUT)    # BIN1
+        GPIO.setup(20, GPIO.OUT)    # BIN2
+        GPIO.setup(21, GPIO.OUT)    # PWMB
 
-    # Wait until at correct position
-    while enc_t != Current1:
-
-    # Turn off Motor A
-    GPIO.output(25, GPIO.LOW)     # PWMA
-    GPIO.output(8, GPIO.LOW)    # AIN2
-    GPIO.output(7, GPIO.LOW)    # AIN1
-    GPIO.output(12, GPIO.LOW)    # STBY
-
-
-    if secondROT_now == secondROT:
-
-        if enc_b < Current2:
-
-            # Clockwise control of Motor B
-            GPIO.output(16, GPIO.HIGH)  # Set BIN1
-            GPIO.output(20, GPIO.LOW)   # Set BIN2
-            
-            # Set motor speed with PWMB
-            GPIO.output(21, GPIO.HIGH)  # Motor B
-            
-            # Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
-
-
-        elif enc_b > Current2:
-
-            # Counterclockwise control of Motor B
-            GPIO.output(16, GPIO.LOW)  # Set BIN1
-            GPIO.output(20, GPIO.HIGH)   # Set BIN2
-            
-            # Set motor speed with PWMB
-            GPIO.output(21, GPIO.HIGH)  # Motor B
-            
-            # Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
-
-
-    elif secondROT_now > secondROT:
-
-        # Counterclockwise control of Motor B
-        GPIO.output(16, GPIO.LOW)  # Set BIN1
-        GPIO.output(20, GPIO.HIGH)   # Set BIN2
-            
-        # Set motor speed with PWMB
-        GPIO.output(21, GPIO.HIGH)  # Motor B
-            
-        # Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
-
-        # Overshoot corrent position
-        while (enc_b-1) != Current2:
-
-
-    elif secondROT_now < secondROT:
-
-        # Clockwise control of Motor B
-        GPIO.output(16, GPIO.HIGH)  # Set BIN1
-        GPIO.output(20, GPIO.LOW)   # Set BIN2
-            
-        # Set motor speed with PWMB
-        GPIO.output(21, GPIO.HIGH)  # Motor B
-            
-        # Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
-
-        # Overshooot correct position
-        while (enc_b+1) != Current2:
-
-    # Wait until at correct position
-    while enc_b != Current2:
-
-    # Turn off Motor B
-    GPIO.output(12, GPIO.LOW)    # STBY
-    GPIO.output(16, GPIO.LOW)    # BIN1
-    GPIO.output(20, GPIO.LOW)    # BIN2
-    GPIO.output(21, GPIO.LOW)    # PWMB
-    
-    # Update secondROT_now
-    secondROT_now = secondROT
-
-    c.close()
-
-
+        turnBottomMotor(enc_b, SecondROT)
 
 # Close the connection with the client
+    c.close()
 c.close()
-
-# WILL NEED TO BE CHANGED AND ADDED TO
-# Reset all GPIO pins
-# Make sure everything has stopped moving
-# Not sure if needed
-GPIO.output(25, GPIO.LOW)   # PWMA
-GPIO.output(8, GPIO.LOW)    # AIN2
-GPIO.output(7, GPIO.LOW)    # AIN1
-GPIO.output(12, GPIO.LOW)   # STBY
-GPIO.output(16, GPIO.LOW)   # BIN1
-GPIO.output(20, GPIO.LOW)   # BIN2
-GPIO.output(21, GPIO.LOW)   # PWMB
 
 # Release GPIO pins
 GPIO.cleanup()
-
-# Shutdown Pi
-#call("sudo nohup shutdown -h now", shell=True)
 
 
