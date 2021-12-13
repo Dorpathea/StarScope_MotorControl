@@ -227,11 +227,28 @@ def getALT(RA_hr, DEC, LON, LAT):
     UT= 0.0
     LST= 0.0
     ALT= 0.0
+    DS= 0.0
 
     #Get current time
     hr=datetime.now().hour
     mint=datetime.now().minute
     sec=datetime.now().second
+    month=datetime.now().month
+    date=datetime.now().day    
+    
+    # Check for daylight saving
+    if month == 3:
+            if day >= 17:
+                DS=4.0
+            else DS=5.0
+
+    elif month >= 4:
+        if month < 11:
+            DS=4.0
+
+    else DS=5.0
+
+
 
     # Convert right ascension hrs to deg (hrs*15)
     RA=RA_hr*15.0
@@ -240,7 +257,7 @@ def getALT(RA_hr, DEC, LON, LAT):
     D=getD(hr, mint, sec)
 
     # Find the universal time in decimal hrs
-    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
+    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + DS
 
     # Find local sidereal time (LST)
     LST=100.46 + 0.985647 * D + LON + 15.0 * UT
@@ -285,11 +302,26 @@ def getAZ(RA_hr, DEC, LON, LAT, ALT):
     RA= 0.0
     HA= 0.0
     D= 0.0
+    DS= 0.0
 
     #Get current time
     hr=datetime.now().hour
     mint=datetime.now().minute
     sec=datetime.now().second
+    month=datetime.now().month
+    date=datetime.now().day    
+    
+    # Check for daylight saving
+    if month == 3:
+            if day >= 17:
+                DS=4.0
+            else DS=5.0
+
+    elif month >= 4:
+        if month < 11:
+            DS=4.0
+
+    else DS=5.0
 
     # Convert right ascension hrs to deg (hrs*15)
     RA=RA_hr*15.0
@@ -298,7 +330,7 @@ def getAZ(RA_hr, DEC, LON, LAT, ALT):
     D=getD(hr, mint, sec)
 
     # Find the universal time in decimal hrs
-    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
+    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + DS
 
     # Find local sidereal time (LST)
     LST=(100.46 + 0.985647 * D + LON + 15.0 * UT)
@@ -429,7 +461,7 @@ GPIO.setup(11, GPIO.IN)     # 7
 GPIO.setup(19, GPIO.IN)     # 8
 
 
-# GPIO pins setup with RPi (WILL NEED TO BE CHANGED!)
+# GPIO pins setup with RPi
 GPIO.setup(25, GPIO.OUT)    # PWMA
 GPIO.setup(8, GPIO.OUT)     # AIN2
 GPIO.setup(7, GPIO.OUT)     # AIN1
@@ -450,6 +482,9 @@ s.bind(('', port))
 # Put the socket into listening mode
 s.listen(5)
 # print ("socket is listening")
+
+# Current secondROT flag declaration
+secondROT_now = 0.0
 
 # A forever loop until we interrupt or an error occurs
 while True:
@@ -583,20 +618,35 @@ while True:
     GPIO.output(12, GPIO.LOW)    # STBY
 
 
-    if enc_b < Current2:
+    if secondROT_now == secondROT:
 
-        # Clockwise control of Motor B
-        GPIO.output(16, GPIO.HIGH)  # Set BIN1
-        GPIO.output(20, GPIO.LOW)   # Set BIN2
+        if enc_b < Current2:
+
+            # Clockwise control of Motor B
+            GPIO.output(16, GPIO.HIGH)  # Set BIN1
+            GPIO.output(20, GPIO.LOW)   # Set BIN2
             
-        # Set motor speed with PWMB
-        GPIO.output(21, GPIO.HIGH)  # Motor B
+            # Set motor speed with PWMB
+            GPIO.output(21, GPIO.HIGH)  # Motor B
             
-        # Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
+            # Disable standby with STBY
+            GPIO.output(12, GPIO.HIGH)
 
 
-    elif enc_b > Current2:
+        elif enc_b > Current2:
+
+            # Counterclockwise control of Motor B
+            GPIO.output(16, GPIO.LOW)  # Set BIN1
+            GPIO.output(20, GPIO.HIGH)   # Set BIN2
+            
+            # Set motor speed with PWMB
+            GPIO.output(21, GPIO.HIGH)  # Motor B
+            
+            # Disable standby with STBY
+            GPIO.output(12, GPIO.HIGH)
+
+
+    elif secondROT_now > secondROT:
 
         # Counterclockwise control of Motor B
         GPIO.output(16, GPIO.LOW)  # Set BIN1
@@ -608,6 +658,25 @@ while True:
         # Disable standby with STBY
         GPIO.output(12, GPIO.HIGH)
 
+        # Overshoot corrent position
+        while (enc_b-1) != Current2:
+
+
+    elif secondROT_now < secondROT:
+
+        # Clockwise control of Motor B
+        GPIO.output(16, GPIO.HIGH)  # Set BIN1
+        GPIO.output(20, GPIO.LOW)   # Set BIN2
+            
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
+            
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
+
+        # Overshooot correct position
+        while (enc_b+1) != Current2:
+
     # Wait until at correct position
     while enc_b != Current2:
 
@@ -617,7 +686,12 @@ while True:
     GPIO.output(20, GPIO.LOW)    # BIN2
     GPIO.output(21, GPIO.LOW)    # PWMB
     
+    # Update secondROT_now
+    secondROT_now = secondROT
+
     c.close()
+
+
 
 # Close the connection with the client
 c.close()

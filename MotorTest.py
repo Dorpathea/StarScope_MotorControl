@@ -18,7 +18,19 @@ GPIO.setup(12, GPIO.OUT)    # STBY
 GPIO.setup(21, GPIO.OUT)     # PWMB
 GPIO.setup(20, GPIO.OUT)    # BIN2
 GPIO.setup(16, GPIO.OUT)    # BIN1
-  
+
+
+# Turn off Motor B
+GPIO.output(12, GPIO.LOW)    # STBY
+GPIO.setup(21, GPIO.LOW)     # PWMB
+GPIO.setup(20, GPIO.LOW)    # BIN2
+GPIO.setup(16, GPIO.LOW)    # BIN1
+
+# Turn off Motor A
+GPIO.output(25, GPIO.LOW)     # PWMA
+GPIO.output(8, GPIO.LOW)    # AIN2
+GPIO.output(7, GPIO.LOW)    # AIN1
+GPIO.output(12, GPIO.LOW)    # STBY
 
 # Clockwise control of Motor A
 GPIO.output(7, GPIO.HIGH)  # Set AIN1
@@ -31,8 +43,7 @@ GPIO.output(25, GPIO.HIGH)   # Motor A
 GPIO.output(12, GPIO.HIGH)
 
 # Slight Delay
-time.sleep(5)
-
+time.sleep(3)
 
 # Counterclockwise control of Motor A
 GPIO.output(7, GPIO.LOW)  # Set AIN1
@@ -45,7 +56,7 @@ GPIO.output(25, GPIO.HIGH)   # Motor A
 GPIO.output(12, GPIO.HIGH)
 
 # Slight Delay
-time.sleep(5)
+time.sleep(3)
 
 # Turn off Motor A
 GPIO.output(25, GPIO.LOW)     # PWMA
@@ -53,6 +64,8 @@ GPIO.output(8, GPIO.LOW)    # AIN2
 GPIO.output(7, GPIO.LOW)    # AIN1
 GPIO.output(12, GPIO.LOW)    # STBY
 
+#Delay for swapping directions
+time.sleep(3)
 
 #Clockwise control of Motor B
 GPIO.output(16, GPIO.HIGH)  # Set BIN1
@@ -65,7 +78,7 @@ GPIO.output(21, GPIO.HIGH)   # Motor B
 GPIO.output(12, GPIO.HIGH)
 
 # Slight Delay
-time.sleep(5)
+time.sleep(2)
 
 
 # Counterclockwise control of Motor B
@@ -79,7 +92,7 @@ GPIO.output(21, GPIO.HIGH)   # Motor B
 GPIO.output(12, GPIO.HIGH)
 
 # Slight Delay
-time.sleep(5)
+time.sleep(2)
 
 # Turn off Motor B
 GPIO.output(12, GPIO.LOW)    # STBY
