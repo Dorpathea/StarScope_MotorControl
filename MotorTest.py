@@ -20,9 +20,9 @@ def turnBottomMotor():
 
     # Turn off Motor B
     GPIO.output(12, GPIO.LOW)    # STBY
-    GPIO.setup(21, GPIO.LOW)     # PWMB
-    GPIO.setup(20, GPIO.LOW)    # BIN2
-    GPIO.setup(16, GPIO.LOW)    # BIN1
+    GPIO.output(21, GPIO.LOW)     # PWMB
+    GPIO.output(20, GPIO.LOW)    # BIN2
+    GPIO.output(16, GPIO.LOW)    # BIN1
 
     #Clockwise control of Motor B
     GPIO.output(16, GPIO.HIGH)  # Set BIN1
@@ -52,9 +52,9 @@ def turnBottomMotor():
 
     # Turn off Motor B
     GPIO.output(12, GPIO.LOW)    # STBY
-    GPIO.setup(21, GPIO.LOW)     # PWMB
-    GPIO.setup(20, GPIO.LOW)    # BIN2
-    GPIO.setup(16, GPIO.LOW)    # BIN1
+    GPIO.output(21, GPIO.LOW)     # PWMB
+    GPIO.output(20, GPIO.LOW)    # BIN2
+    GPIO.output(16, GPIO.LOW)    # BIN1
 
 
 
@@ -111,14 +111,12 @@ GPIO.setup(25, GPIO.OUT)     # PWMA
 GPIO.setup(8, GPIO.OUT)    # AIN2
 GPIO.setup(7, GPIO.OUT)    # AIN1
 GPIO.setup(12, GPIO.OUT)    # STBY
-#GPIO.setup(21, GPIO.OUT)     # PWMB
-#GPIO.setup(20, GPIO.OUT)    # BIN2
-#GPIO.setup(16, GPIO.OUT)    # BIN1
 
-GPIO.output(25, GPIO.LOW)     # PWMA
-GPIO.output(8, GPIO.LOW)    # AIN2
-GPIO.output(7, GPIO.LOW)    # AIN1
-GPIO.output(12, GPIO.LOW)    # STBY
+
+#GPIO.output(25, GPIO.LOW)     # PWMA
+#GPIO.output(8, GPIO.LOW)    # AIN2
+#GPIO.output(7, GPIO.LOW)    # AIN1
+#GPIO.output(12, GPIO.LOW)    # STBY
 #GPIO.setup(21, GPIO.LOW)     # PWMB
 #GPIO.setup(20, GPIO.LOW)    # BIN2
 #GPIO.setup(16, GPIO.LOW)    # BIN1
@@ -130,9 +128,6 @@ time.sleep(3)
 GPIO.setup(21, GPIO.OUT)     # PWMB
 GPIO.setup(20, GPIO.OUT)    # BIN2
 GPIO.setup(16, GPIO.OUT)    # BIN1
-GPIO.setup(21, GPIO.LOW)     # PWMB
-GPIO.setup(20, GPIO.LOW)    # BIN2
-GPIO.setup(16, GPIO.LOW)    # BIN1
 
 turnBottomMotor()
 

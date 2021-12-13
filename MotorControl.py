@@ -2,7 +2,7 @@
 
 # Dorothy Harris and Abby Boucher
 # ECE Capstone 2021
-# Controlling the Motors and encoders using the app with TCP socket (Server)
+# Controlling the Motors and encoders using the webserver application with TCP socket and html
 
 # Required imports
 import time
@@ -480,7 +480,7 @@ def turnTopMotor(enc_t):
     GPIO.output(12, GPIO.LOW)    # STBY
 
 
-def turnBottomMotor(enc_b, SecondROT):
+def turnBottomMotor(enc_b, SecondROT, secondROT_now):
 
     # Determine encoders position 
     Encoders= []
@@ -488,7 +488,7 @@ def turnBottomMotor(enc_b, SecondROT):
 
     Current2= Encoders[1]
 
-    if secondROT_now == secondROT:
+    if secondROT_now == SecondROT:
 
         if enc_b < Current2:
 
@@ -516,7 +516,7 @@ def turnBottomMotor(enc_b, SecondROT):
             GPIO.output(12, GPIO.HIGH)
 
 
-    elif secondROT_now > secondROT:
+    elif secondROT_now > SecondROT:
 
         # Counterclockwise control of Motor B
         GPIO.output(16, GPIO.LOW)  # Set BIN1
@@ -533,7 +533,7 @@ def turnBottomMotor(enc_b, SecondROT):
             Encoders= encoderValue()
             Current2= Encoders[1]
 
-    elif secondROT_now < secondROT:
+    elif secondROT_now < SecondROT:
 
         # Clockwise control of Motor B
         GPIO.output(16, GPIO.HIGH)  # Set BIN1
@@ -552,7 +552,7 @@ def turnBottomMotor(enc_b, SecondROT):
 
 
 
-     # Wait until at correct position
+    # Wait until at correct position
     while Current2 != enc_b:
         Encoders= encoderValue()
         Current2= Encoders[1]
@@ -564,7 +564,9 @@ def turnBottomMotor(enc_b, SecondROT):
     GPIO.output(21, GPIO.LOW)    # PWMB
     
     # Update secondROT_now
-    secondROT_now = secondROT
+    secondROT_now = SecondROT
+
+    return secondROT_now
 
 
 
@@ -650,6 +652,8 @@ GPIO.setup(9, GPIO.IN)      # 6
 GPIO.setup(11, GPIO.IN)     # 7
 GPIO.setup(19, GPIO.IN)     # 8
 
+# Current secondROT flag declaration
+secondROT_now = 0.0
 
 # Create the socket object
 s = socket.socket()
@@ -664,11 +668,34 @@ s.bind(('', port))
 s.listen(5)
 # print ("socket is listening")
 
-# Current secondROT flag declaration
-secondROT_now = 0.0
 
 # A forever loop until we interrupt or an error occurs
 while True:
+
+    # Set GPIO mode to the GPIO pins (Not the board values)
+    GPIO.setmode(GPIO.BCM)
+
+    # GPIO pins for Encoder A
+    GPIO.setup(27, GPIO.IN)    # 1
+    GPIO.setup(22, GPIO.IN)    # 2
+    GPIO.setup(5, GPIO.IN)     # 3
+    GPIO.setup(6, GPIO.IN)     # 4
+    GPIO.setup(13, GPIO.IN)    # 5
+    GPIO.setup(26, GPIO.IN)    # 6
+    GPIO.setup(23, GPIO.IN)    # 7
+    GPIO.setup(24, GPIO.IN)    # 8
+
+
+    # GPIO pins for Encoder B
+    GPIO.setup(2, GPIO.IN)      # 1
+    GPIO.setup(3, GPIO.IN)      # 2
+    GPIO.setup(4, GPIO.IN)      # 3
+    GPIO.setup(17, GPIO.IN)     # 4
+    GPIO.setup(10, GPIO.IN)     # 5
+    GPIO.setup(9, GPIO.IN)      # 6
+    GPIO.setup(11, GPIO.IN)     # 7
+    GPIO.setup(19, GPIO.IN)     # 8
+
 
     # Establish a connection with the client
     c, addr = s.accept()
@@ -728,13 +755,16 @@ while True:
         GPIO.setup(20, GPIO.OUT)    # BIN2
         GPIO.setup(21, GPIO.OUT)    # PWMB
 
-        turnBottomMotor(enc_b, SecondROT)
+        secondROT_now= turnBottomMotor(enc_b, SecondROT, secondROT_now)
 
-# Close the connection with the client
+    # Release GPIO pins
+    GPIO.cleanup()
+
+    # Close the connection with the client
     c.close()
+   
+# Make sure everything is off
 c.close()
-
-# Release GPIO pins
 GPIO.cleanup()
 
 
