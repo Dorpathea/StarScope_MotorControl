@@ -240,13 +240,15 @@ def getALT(RA_hr, DEC, LON, LAT):
     if month == 3:
             if day >= 17:
                 DS=4.0
-            else DS=5.0
+            else:
+                DS=5.0
 
     elif month >= 4:
         if month < 11:
             DS=4.0
 
-    else DS=5.0
+    else:
+        DS=5.0
 
 
 
@@ -315,13 +317,15 @@ def getAZ(RA_hr, DEC, LON, LAT, ALT):
     if month == 3:
             if day >= 17:
                 DS=4.0
-            else DS=5.0
+            else:
+                DS=5.0
 
     elif month >= 4:
         if month < 11:
             DS=4.0
 
-    else DS=5.0
+    else:
+        DS=5.0
 
     # Convert right ascension hrs to deg (hrs*15)
     RA=RA_hr*15.0
@@ -443,7 +447,7 @@ def turnTopMotor(enc_t):
 
     Current1= Encoders[0]
 
-   if enc_t < Current1:
+    if enc_t < Current1:
             
         # Clockwise control of Motor A
         GPIO.output(7, GPIO.HIGH)  # Set AIN1
@@ -708,7 +712,7 @@ while True:
     if not result: break
 
     # Error Checking
-    print "Client says: "+ result
+    print ("Client says: "+ result)
 
     # MOTOR TURN MATH
     # Get RA and DEC of desired star
