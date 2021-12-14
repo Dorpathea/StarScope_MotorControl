@@ -84,7 +84,7 @@ def getALT(RA_hr, DEC, LON, LAT):
     D=getD(hr, mint, sec)
 
     # Find the universal time in decimal hrs
-    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
+    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 5.0
 
     # Find local sidereal time (LST)
     LST=100.46 + 0.985647 * D + LON + 15.0 * UT
@@ -141,7 +141,7 @@ def getAZ(RA_hr, DEC, LON, LAT, ALT):
     D=getD(hr, mint, sec)
 
     # Find the universal time in decimal hrs
-    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 4.0
+    UT=(hr + ((mint + (sec / 60.0)) / 60.0)) + 5.0
 
     # Find local sidereal time (LST)
     LST=(100.46 + 0.985647 * D + LON + 15.0 * UT)
@@ -283,6 +283,8 @@ s.bind(('', port))
 s.listen(5)
 # print ("socket is listening")
 
+testVariable = 0.0
+
 # A forever loop until we interrupt or an error occurs
 while True:
     # Establish a connection with the client
@@ -322,6 +324,9 @@ while True:
     tooLow=totalt[3]
 
     print("TooLow: ", tooLow)
+
+    testVariable += 1
+    print(testVariable)
 
     if tooLow == 1:
         print("error, star too low (below horizon)")

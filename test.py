@@ -167,7 +167,7 @@ GPIO.setup(24, GPIO.IN)    # 8
 # Encoder B
 GPIO.setup(2, GPIO.IN)      # 1
 GPIO.setup(3, GPIO.IN)      # 2
-GPIO.setup(4, GPIO.IN)      # 3
+GPIO.setup(18, GPIO.IN)      # 3
 GPIO.setup(17, GPIO.IN)     # 4
 GPIO.setup(10, GPIO.IN)     # 5
 GPIO.setup(9, GPIO.IN)      # 6
@@ -197,7 +197,7 @@ while True:
     c2 =GPIO.input(9)
     d2 =GPIO.input(10)
     e2 =GPIO.input(17)
-    f2 =GPIO.input(4)
+    f2 =GPIO.input(18)
     g2 =GPIO.input(3)
     h2 =GPIO.input(2)
 
