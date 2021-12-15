@@ -195,14 +195,7 @@ def getMyState(starRA, starDEC, LON, LAT):
     enc_t=round((ALT/1.91))
 
     # Bottom encoder is mounted upside-down
-    if round((AZ/1.78)) < 128.0:
-        enc_b = (128.0 - round((AZ/1.78)))
-
-    elif round((AZ/1.78)) == 128.0:
-        enc_b=0.0
-
-    else:
-        enc_b=(256.0- round((AZ/1.78)))
+    enc_b = round((AZ/2.8125))
 
     # Check if star is below horizon
     if ALT < 0.0:
@@ -493,36 +486,36 @@ def turnBottomMotor(enc_b):
     print("Enc_b: ", enc_b)
     print("Current2: ", Current2)
 
-        if enc_b > Current2:
+    if enc_b > Current2:
 
-            # Clockwise control of Motor B
-            GPIO.output(16, GPIO.HIGH)  # Set BIN1
-            GPIO.output(20, GPIO.LOW)   # Set BIN2
+        # Clockwise control of Motor B
+        GPIO.output(16, GPIO.HIGH)  # Set BIN1
+        GPIO.output(20, GPIO.LOW)   # Set BIN2
             
-            # Set motor speed with PWMB
-            GPIO.output(21, GPIO.HIGH)  # Motor B
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
             
-            # Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
 
 
-        elif enc_b < Current2:
+    elif enc_b < Current2:
 
-            # Counterclockwise control of Motor B
-            GPIO.output(16, GPIO.LOW)  # Set BIN1
-            GPIO.output(20, GPIO.HIGH)   # Set BIN2
+        # Counterclockwise control of Motor B
+        GPIO.output(16, GPIO.LOW)  # Set BIN1
+        GPIO.output(20, GPIO.HIGH)   # Set BIN2
             
-            # Set motor speed with PWMB
-            GPIO.output(21, GPIO.HIGH)  # Motor B
+        # Set motor speed with PWMB
+        GPIO.output(21, GPIO.HIGH)  # Motor B
             
-            # Disable standby with STBY
-            GPIO.output(12, GPIO.HIGH)
+        # Disable standby with STBY
+        GPIO.output(12, GPIO.HIGH)
 
 
-        # Wait until at correct position
-        while Current2 != enc_b:
-            Encoders= encoderValue()
-            Current2= Encoders[1]
+    # Wait until at correct position
+    while Current2 != enc_b:
+        Encoders= encoderValue()
+        Current2= Encoders[1]
 
 
     print("Current2 after: ", Current2)
