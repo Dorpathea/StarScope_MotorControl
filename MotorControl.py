@@ -180,7 +180,6 @@ def getMyState(starRA, starDEC, LON, LAT):
     AZ=0.0              # Target azimuth
     enc_b=0.0           # Desired state of bottom encoder
     enc_t=0.0           # Desired state of top encoder
-    secondROT=0.0       # Check if more than one rotation is needed
     tooLow=0.0          # Check if star is below horizon
 
     # Get target coordinates
@@ -195,18 +194,15 @@ def getMyState(starRA, starDEC, LON, LAT):
     # Top encoder
     enc_t=round((ALT/1.91))
 
-    # Bottome encoder is mounted upside-down
+    # Bottom encoder is mounted upside-down
     if round((AZ/1.78)) < 128.0:
         enc_b = (128.0 - round((AZ/1.78)))
-        secondROT=0.0
 
     elif round((AZ/1.78)) == 128.0:
         enc_b=0.0
-        secondROT=1
 
     else:
         enc_b=(256.0- round((AZ/1.78)))
-        secondROT=1
 
     # Check if star is below horizon
     if ALT < 0.0:
@@ -216,7 +212,7 @@ def getMyState(starRA, starDEC, LON, LAT):
         tooLow=0.0
 
     # Return values
-    total= [enc_b, enc_t, secondROT, tooLow]
+    total= [enc_b, enc_t, tooLow]
     return total
 
 
@@ -486,7 +482,7 @@ def turnTopMotor(enc_t):
     GPIO.output(12, GPIO.LOW)    # STBY
 
 
-def turnBottomMotor(enc_b, SecondROT, secondROT_now):
+def turnBottomMotor(enc_b):
 
     # Determine encoders position 
     Encoders= []
@@ -495,11 +491,7 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
     Current2= Encoders[1]
 
     print("Enc_b: ", enc_b)
-    print("SecondROT_now: ", secondROT_now)
-    print("SecondROT: ", SecondROT)
     print("Current2: ", Current2)
-
-    if secondROT_now == SecondROT:
 
         if enc_b > Current2:
 
@@ -512,11 +504,6 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
             
             # Disable standby with STBY
             GPIO.output(12, GPIO.HIGH)
-
-            # Wait until at correct position
-            while Current2 != enc_b:
-                Encoders= encoderValue()
-                Current2= Encoders[1]
 
 
         elif enc_b < Current2:
@@ -531,55 +518,12 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
             # Disable standby with STBY
             GPIO.output(12, GPIO.HIGH)
 
-            # Wait until at correct position
-            while Current2 != enc_b:
-                Encoders= encoderValue()
-                Current2= Encoders[1]
-
-
-    elif secondROT_now > SecondROT:
-
-        # Counterclockwise control of Motor B
-        GPIO.output(16, GPIO.LOW)  # Set BIN1
-        GPIO.output(20, GPIO.HIGH)   # Set BIN2
-            
-        # Set motor speed with PWMB
-        GPIO.output(21, GPIO.HIGH)  # Motor B
-            
-        # Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
-
-        # Overshoot corrent position
-        while Current2 != (enc_b-1):
-            Encoders= encoderValue()
-            Current2= Encoders[1]
 
         # Wait until at correct position
         while Current2 != enc_b:
             Encoders= encoderValue()
             Current2= Encoders[1]
 
-    elif secondROT_now < SecondROT:
-
-        # Clockwise control of Motor B
-        GPIO.output(16, GPIO.HIGH)  # Set BIN1
-        GPIO.output(20, GPIO.LOW)   # Set BIN2
-            
-        # Set motor speed with PWMB
-        GPIO.output(21, GPIO.HIGH)  # Motor B
-            
-        # Disable standby with STBY
-        GPIO.output(12, GPIO.HIGH)
-
-        # Overshooot correct position
-        while Current2 != (enc_b+1):
-            Encoders= encoderValue()
-            Current2= Encoders[1]
-
-        # Wait until at correct position
-        while Current2 != enc_b:
-            Encoders= encoderValue()
-            Current2= Encoders[1]
 
     print("Current2 after: ", Current2)
 
@@ -588,12 +532,6 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
     GPIO.output(16, GPIO.LOW)    # BIN1
     GPIO.output(20, GPIO.LOW)    # BIN2
     GPIO.output(21, GPIO.LOW)    # PWMB
-    
-    # Update secondROT_now
-    secondROT_now = SecondROT
-
-    return secondROT_now
-
 
 
 def encoderValue():
@@ -654,32 +592,6 @@ def encoderValue():
     return values
 
 
-# Set GPIO mode to the GPIO pins (Not the board values)
-#GPIO.setmode(GPIO.BCM)
-
-# GPIO pins for Encoder A
-#GPIO.setup(27, GPIO.IN)    # 1
-#GPIO.setup(22, GPIO.IN)    # 2
-#GPIO.setup(5, GPIO.IN)     # 3
-#GPIO.setup(6, GPIO.IN)     # 4
-#GPIO.setup(13, GPIO.IN)    # 5
-#GPIO.setup(26, GPIO.IN)    # 6
-#GPIO.setup(23, GPIO.IN)    # 7
-#GPIO.setup(24, GPIO.IN)    # 8
-
-
-# GPIO pins for Encoder B
-#GPIO.setup(2, GPIO.IN)      # 1
-#GPIO.setup(3, GPIO.IN)      # 2
-#GPIO.setup(18, GPIO.IN)      # 3
-#GPIO.setup(17, GPIO.IN)     # 4
-#GPIO.setup(10, GPIO.IN)     # 5
-#GPIO.setup(9, GPIO.IN)      # 6
-#GPIO.setup(11, GPIO.IN)     # 7
-#GPIO.setup(19, GPIO.IN)     # 8
-
-# Current secondROT flag declaration
-secondROT_now = 0.0
 
 # Create the socket object
 s = socket.socket()
@@ -756,8 +668,7 @@ while True:
     # Separate parts of array
     enc_b= totalt[0]
     enc_t= totalt[1]
-    SecondROT= totalt[2]
-    tooLow= totalt[3]
+    tooLow= totalt[2]
 
     print("TooLow: ", tooLow)
 
@@ -781,7 +692,7 @@ while True:
         GPIO.setup(20, GPIO.OUT)    # BIN2
         GPIO.setup(21, GPIO.OUT)    # PWMB
 
-        secondROT_now= turnBottomMotor(enc_b, SecondROT, secondROT_now)
+        turnBottomMotor(enc_b)
 
     # Release GPIO pins
     GPIO.cleanup()
