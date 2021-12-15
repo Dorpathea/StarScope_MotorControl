@@ -501,7 +501,7 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
 
     if secondROT_now == SecondROT:
 
-        if enc_b < Current2:
+        if enc_b > Current2:
 
             # Clockwise control of Motor B
             GPIO.output(16, GPIO.HIGH)  # Set BIN1
@@ -519,7 +519,7 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
                 Current2= Encoders[1]
 
 
-        elif enc_b > Current2:
+        elif enc_b < Current2:
 
             # Counterclockwise control of Motor B
             GPIO.output(16, GPIO.LOW)  # Set BIN1
@@ -537,7 +537,7 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
                 Current2= Encoders[1]
 
 
-    elif secondROT_now < SecondROT:
+    elif secondROT_now > SecondROT:
 
         # Counterclockwise control of Motor B
         GPIO.output(16, GPIO.LOW)  # Set BIN1
@@ -559,7 +559,7 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
             Encoders= encoderValue()
             Current2= Encoders[1]
 
-    elif secondROT_now > SecondROT:
+    elif secondROT_now < SecondROT:
 
         # Clockwise control of Motor B
         GPIO.output(16, GPIO.HIGH)  # Set BIN1
@@ -581,6 +581,7 @@ def turnBottomMotor(enc_b, SecondROT, secondROT_now):
             Encoders= encoderValue()
             Current2= Encoders[1]
 
+    print("Current2 after: ", Current2)
 
     # Turn off Motor B
     GPIO.output(12, GPIO.LOW)    # STBY
